@@ -1,0 +1,35 @@
+A simple tool for scons for building delphi projects.
+
+dcc32.py provides the DelphiProject command to the scons tool set to
+build classic delphi projects. The compilation is invoked by calling
+dcc32 on the passed .dpr file.
+
+Usage:
+======
+
+# --- Start of example
+env=Environment( tools = ["default", "dcc323"],
+                 toolpath = ["."] )
+
+# ...
+
+env.DelphiProject("myproject.dpr")
+# --- End of example
+
+The tool scans the .dpr file on whether it will result in a program or
+a library and start to track the resulting .exe or .dll file
+respectively. The user may provide command switches via the DCCFLAGS
+environment variable.
+
+If DCCFLAGS contains an -E switch, scons will track the target file in
+the specified directory. If DCCFLAGS doesn't contain an -E switch, but
+the .cfg file of the project does, it will use the -E switch in the
+config file instead. Otherwise the tool assumes that the file will be
+compiled into the current directory.
+
+Dependency and change tracking:
+===============================
+
+Because dcc32 tracks dependencies during compilation, the scons tool
+does not track any compilation results except the target
+file. Therefore only the target file will be cleaned.
