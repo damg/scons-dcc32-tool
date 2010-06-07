@@ -8,7 +8,7 @@ Usage:
 ======
 
 # --- Start of example
-env=Environment( tools = ["default", "dcc323"],
+env=Environment( tools = ["default", "dcc32"],
                  toolpath = ["."] )
 
 # ...
