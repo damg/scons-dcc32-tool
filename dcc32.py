@@ -45,7 +45,7 @@ def exists(env):
     return WhereIs(env["DCC"])
 
 def is_library_project(content):
-    return re.match(r"\s*library\s+[^;]+\s*;", content) != None
+    return re.search(r"\s*library\s+[^;]+\s*;", content) != None
 
 def is_program_project(content):
     return re.search(r"\s*program\s+[^;]+\s*;", content) != None
@@ -82,24 +82,45 @@ def dcc32_emitter(target, source, env):
         raise RuntimeError("Unknown delphi project type")
 
     outdir=dccflags_output_directory(env["DCCFLAGS"])
+
     if not outdir:
         cfg_filename = "%s.cfg" % str(target[0])
         outdir=cfg_output_directory(cfg_filename)
     if not outdir:
         outdir="."
+
+    if outdir.startswith("#"):
+        outdir = "%s/%s" % (env.GetLaunchDir(), outdir[1:])
     tfile = os.path.join(outdir, tfile)
+
     target.append(tfile)
 
     return (target, source)
 
 def generate(env):
+    
+    def _dccflags_unitpath_expander(dccopts):
+        def expand_path(opt):
+            if opt.startswith("-E"):
+                outdir = opt[3:len(opt)-1]
+                if outdir.startswith("#"):
+                    outdir = "%s/%s" % (env.GetLaunchDir(), outdir[1:])
+                return "-E\"%s\"" % outdir
+            else:
+                return opt
+                
+        return [ expand_path(e) for e in dccopts ]
+
     env["DCC"] = "dcc32"
     env["DCCFLAGS"] = []
+    env["_dccflags_unitpath_expander"] = _dccflags_unitpath_expander
+    env["_DCCFLAGS"] = "${_dccflags_unitpath_expander(DCCFLAGS)}"
 
     dcc32_compiler = Builder(
-        action = "$DCC $DCCFLAGS $SOURCES",
+        action = "$DCC $_DCCFLAGS ${SOURCES.file}",
         src_suffix = ".dpr",
-        emitter = dcc32_emitter
+        emitter = dcc32_emitter,
+        chdir=1
         )
 
     env.Append(BUILDERS = { "DelphiProject" : dcc32_compiler } )
